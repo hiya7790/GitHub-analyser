@@ -28,11 +28,11 @@ const pool = mysql.createPool(dbConfig);
 async function testConnection() {
   try {
     const conn = await pool.getConnection();
-    console.log("✅ MySQL connected successfully");
+    console.log("MySQL connected successfully");
     conn.release();
     return true;
   } catch (err) {
-    console.error("❌ MySQL connection failed:", err.message);
+    console.error("MySQL connection failed:", err.message);
     throw err;
   }
 }
@@ -161,10 +161,10 @@ async function initializeDatabase() {
     `);
 
     await connection.commit();
-    console.log("✅ Database tables initialized successfully");
+    console.log("Database tables initialized successfully");
   } catch (err) {
     await connection.rollback();
-    console.error("❌ Database initialization failed:", err.message);
+    console.error("Database initialization failed:", err.message);
     throw err;
   } finally {
     connection.release();
