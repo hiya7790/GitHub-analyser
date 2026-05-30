@@ -1,0 +1,49 @@
+services:
+  - type: web
+    name: github-analyzer-api
+    runtime: node
+    region: oregon           # free tier available regions: oregon, frankfurt
+    plan: free
+    buildCommand: npm install
+    startCommand: node index.js
+    healthCheckPath: /health
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: PORT
+        value: 3000
+
+      # ── Database (PlanetScale or any MySQL provider) ──────────────────────
+      # Fill these in Render Dashboard → Environment after first deploy,
+      # OR add them to an Environment Group and sync here.
+      - key: DB_HOST
+        sync: false          # Render will prompt you to set this in the dashboard
+
+      - key: DB_PORT
+        value: 3306
+
+      - key: DB_USER
+        sync: false
+
+      - key: DB_PASSWORD
+        sync: false
+
+      - key: DB_NAME
+        sync: false
+
+      # PlanetScale requires SSL – see src/config/database.js note
+      - key: DB_SSL
+        value: "true"
+
+      # ── GitHub API ────────────────────────────────────────────────────────
+      - key: GITHUB_TOKEN
+        sync: false          # Strongly recommended – raises limit to 5000 req/hr
+
+      # ── Rate limiting ─────────────────────────────────────────────────────
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "900000"
+
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "100"
