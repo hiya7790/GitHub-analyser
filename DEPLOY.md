@@ -1,13 +1,16 @@
-# Deploying to Render (Free Tier)
+# Deploying to Render + TiDB Cloud (Free Tier)
 
 This guide gets you live in ~10 minutes using:
-- **Render** — hosts the Node.js API (free)
-- **PlanetScale** — hosts the MySQL database (free serverless tier)
+- **Render** — hosts the Node.js API (free web service)
+- **TiDB Cloud Serverless** — hosts the MySQL-compatible database (free tier: 5 GB, 50M request units/month)
+
+> **Note:** PlanetScale discontinued its free tier in 2024. TiDB Cloud Serverless is the best free MySQL-compatible replacement — it works with the same `mysql2` driver and SQL syntax.
 
 ---
 
 ## Step 1 — Push your code to GitHub
 
+Your code should already be on GitHub. If not:
 ```bash
 git init
 git add .
@@ -19,29 +22,34 @@ git push -u origin main
 
 ---
 
-## Step 2 — Set up a free MySQL database on PlanetScale
+## Step 2 — Create a free MySQL database on TiDB Cloud
 
-1. Go to [planetscale.com](https://planetscale.com) and create a free account.
-2. Click **"Create a database"** → name it `github-analyzer` → choose a region close to `oregon` (Render default).
-3. Once created, click **"Connect"** → choose **"Connect with: Node.js"**.
-4. Copy these four values — you'll need them shortly:
-   ```
-   Host:     xxxxxxxxx.us-east.psdb.cloud
-   Username: xxxxxxxxxxxxxxxxx
-   Password: <your-planetscale-password>
-   Database: github-analyzer
-   ```
-5. **Important:** PlanetScale uses a branch model. Your `main` branch is your production DB.
-   The tables are created **automatically** when the server first boots.
+1. Go to [tidbcloud.com](https://tidbcloud.com) and sign up (GitHub login works).
+2. Click **"Create Cluster"** → choose **"Serverless"** (free tier).
+3. Name it `github-analyzer` → pick a region close to **Oregon** (Render's free region).
+4. Once the cluster is ready, click **"Connect"** → select **"General"** connection type.
+5. Copy these values — you'll need them for Render:
 
-> **Free tier limits:** 5 GB storage, 1 billion row reads/month — more than enough.
+   | Field | Example |
+   |-------|---------|
+   | **Host** | `gateway01.us-west-2.prod.aws.tidbcloud.com` |
+   | **Port** | `4000` |
+   | **Username** | `2xxxxxxxxx.root` |
+   | **Password** | *(shown once — save it!)* |
+
+6. Create a database by clicking the **"SQL Editor"** tab in the console and running:
+   ```sql
+   CREATE DATABASE IF NOT EXISTS github_analyzer;
+   ```
+
+> **Free tier limits:** 5 GB row storage, 5 GB request units/month — more than enough for this project.
 
 ---
 
 ## Step 3 — Deploy on Render
 
 1. Go to [render.com](https://render.com) → **New → Web Service**.
-2. Connect your GitHub account and select the `github-analyzer` repo.
+2. Connect your GitHub account and select the `github-analyzer` (or `GitHub-analyser`) repo.
 3. Render will auto-detect the `render.yaml` blueprint. Confirm the settings:
    - **Name:** `github-analyzer-api`
    - **Build Command:** `npm install`
@@ -51,13 +59,13 @@ git push -u origin main
 
    | Key | Value |
    |-----|-------|
-   | `DB_HOST` | (PlanetScale host from Step 2) |
-   | `DB_USER` | (PlanetScale username) |
-   | `DB_PASSWORD` | (PlanetScale password) |
-   | `DB_NAME` | `github-analyzer` |
-   | `DB_PORT` | `3306` |
+   | `DB_HOST` | *(TiDB Cloud host from Step 2)* |
+   | `DB_USER` | *(TiDB Cloud username from Step 2)* |
+   | `DB_PASSWORD` | *(TiDB Cloud password from Step 2)* |
+   | `DB_NAME` | `github_analyzer` |
+   | `DB_PORT` | `4000` |
    | `DB_SSL` | `true` |
-   | `GITHUB_TOKEN` | (your GitHub PAT — optional but recommended) |
+   | `GITHUB_TOKEN` | *(your GitHub PAT — optional but recommended)* |
    | `NODE_ENV` | `production` |
 
 5. Click **"Create Web Service"**. Render will build and deploy automatically.
@@ -89,10 +97,11 @@ curl https://github-analyzer-api.onrender.com/api/profiles
 
 | Limitation | Detail |
 |---|---|
-| **Spin-down** | Free services sleep after 15 min of inactivity. First request after sleep takes ~30 sec. The built-in keep-alive pinger mitigates this. |
-| **Build minutes** | 500 free build minutes/month (each deploy uses ~1–2 min) |
-| **Bandwidth** | 100 GB/month |
-| **GitHub API** | Without `GITHUB_TOKEN`: 60 req/hr. With token: 5000 req/hr |
+| **Render spin-down** | Free services sleep after 15 min of inactivity. First request after sleep takes ~30 sec. The built-in keep-alive pinger mitigates this. |
+| **Render hours** | 750 free instance hours/month |
+| **TiDB storage** | 5 GB row storage on the free tier |
+| **TiDB requests** | 50M request units/month |
+| **GitHub API** | Without `GITHUB_TOKEN`: 60 req/hr. With token: 5,000 req/hr |
 
 ---
 

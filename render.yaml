@@ -15,14 +15,14 @@ services:
       - key: PORT
         value: 3000
 
-      # ── Database (PlanetScale or any MySQL provider) ──────────────────────
+      # ── Database (TiDB Cloud Serverless or any MySQL provider) ─────────────
       # Fill these in Render Dashboard → Environment after first deploy,
       # OR add them to an Environment Group and sync here.
       - key: DB_HOST
         sync: false          # Render will prompt you to set this in the dashboard
 
       - key: DB_PORT
-        value: 3306
+        value: 4000          # TiDB Cloud default; use 3306 for other MySQL providers
 
       - key: DB_USER
         sync: false
@@ -33,7 +33,7 @@ services:
       - key: DB_NAME
         sync: false
 
-      # PlanetScale requires SSL – see src/config/database.js note
+      # TiDB Cloud requires SSL – see src/config/database.js
       - key: DB_SSL
         value: "true"
 

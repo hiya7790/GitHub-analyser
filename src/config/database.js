@@ -1,9 +1,9 @@
 const mysql = require("mysql2/promise");
 
-// PlanetScale (and most cloud MySQL providers) require SSL.
+// Cloud MySQL providers (TiDB Cloud, PlanetScale, etc.) require SSL.
 // Set DB_SSL=true in your environment to enable it.
 const sslConfig = process.env.DB_SSL === "true"
-  ? { rejectUnauthorized: true }
+  ? { minVersion: "TLSv1.2", rejectUnauthorized: true }
   : undefined;
 
 const dbConfig = {
