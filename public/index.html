@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Profile Analyzer API</title>
+  <meta name="description" content="Fetch, analyze, and store GitHub user profiles. Get engagement scores, language breakdowns, repo stats, and historical tracking.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-card: rgba(255, 255, 255, 0.03);
+      --bg-card-hover: rgba(255, 255, 255, 0.06);
+      --border: rgba(255, 255, 255, 0.06);
+      --border-hover: rgba(255, 255, 255, 0.12);
+      --text-primary: #f0f0f5;
+      --text-secondary: #8b8b9e;
+      --text-muted: #5a5a6e;
+      --accent: #7c5cfc;
+      --accent-glow: rgba(124, 92, 252, 0.3);
+      --green: #34d399;
+      --green-glow: rgba(52, 211, 153, 0.15);
+      --blue: #60a5fa;
+      --orange: #fb923c;
+      --red: #f87171;
+      --pink: #f472b6;
+      --yellow: #fbbf24;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* ── Animated background ─────────────────────────────────── */
+    .bg-gradient {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .bg-gradient .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.15;
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .bg-gradient .orb:nth-child(1) {
+      width: 600px; height: 600px;
+      background: var(--accent);
+      top: -200px; left: -100px;
+      animation-duration: 25s;
+    }
+
+    .bg-gradient .orb:nth-child(2) {
+      width: 500px; height: 500px;
+      background: #06b6d4;
+      bottom: -150px; right: -100px;
+      animation-duration: 30s;
+      animation-delay: -5s;
+    }
+
+    .bg-gradient .orb:nth-child(3) {
+      width: 400px; height: 400px;
+      background: var(--pink);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      animation-duration: 22s;
+      animation-delay: -10s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -40px) scale(1.05); }
+      66% { transform: translate(-20px, 20px) scale(0.95); }
+    }
+
+    /* ── Container ───────────────────────────────────────────── */
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── Header / Hero ───────────────────────────────────────── */
+    header {
+      padding: 80px 0 40px;
+      text-align: center;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+      backdrop-filter: blur(12px);
+    }
+
+    .logo-badge .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.85); }
+    }
+
+    h1 {
+      font-size: clamp(2.5rem, 6vw, 3.8rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #fff 0%, #a78bfa 50%, #60a5fa 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 1.15rem;
+      color: var(--text-secondary);
+      max-width: 560px;
+      margin: 0 auto 40px;
+      font-weight: 300;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 24px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px var(--accent-glow);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+
+    /* ── Base URL bar ────────────────────────────────────────── */
+    .base-url {
+      margin: 48px 0;
+      padding: 16px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      backdrop-filter: blur(12px);
+    }
+
+    .base-url code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: var(--green);
+    }
+
+    .copy-btn {
+      padding: 8px 14px;
+      border-radius: 8px;
+      background: var(--bg-card-hover);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+
+    .copy-btn:hover { color: var(--text-primary); border-color: var(--border-hover); }
+    .copy-btn.copied { color: var(--green); border-color: rgba(52, 211, 153, 0.3); }
+
+    /* ── Section titles ──────────────────────────────────────── */
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      padding-left: 2px;
+    }
+
+    /* ── Endpoint cards ──────────────────────────────────────── */
+    .endpoints { display: flex; flex-direction: column; gap: 8px; margin-bottom: 56px; }
+
+    .endpoint {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+
+    .endpoint:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+      transform: translateX(4px);
+    }
+
+    .method {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      min-width: 62px;
+      text-align: center;
+      letter-spacing: 0.02em;
+    }
+
+    .method.get    { color: var(--green);  background: var(--green-glow); }
+    .method.post   { color: var(--blue);   background: rgba(96, 165, 250, 0.12); }
+    .method.put    { color: var(--orange);  background: rgba(251, 146, 60, 0.12); }
+    .method.delete { color: var(--red);    background: rgba(248, 113, 113, 0.12); }
+
+    .endpoint .path {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13.5px;
+      color: var(--text-primary);
+      flex: 1;
+    }
+
+    .endpoint .desc {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      display: none;
+    }
+
+    @media (min-width: 640px) {
+      .endpoint .desc { display: block; }
+    }
+
+    /* ── Try it section ──────────────────────────────────────── */
+    .try-it {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 56px;
+      backdrop-filter: blur(12px);
+    }
+
+    .try-it h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .try-it p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .try-form {
+      display: flex;
+      gap: 10px;
+    }
+
+    .try-form input {
+      flex: 1;
+      padding: 12px 16px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .try-form input:focus { border-color: var(--accent); }
+    .try-form input::placeholder { color: var(--text-muted); }
+
+    .try-form button {
+      padding: 12px 28px;
+      white-space: nowrap;
+    }
+
+    .result-box {
+      margin-top: 16px;
+      display: none;
+    }
+
+    .result-box.visible { display: block; }
+
+    .result-box pre {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      color: var(--green);
+      overflow-x: auto;
+      max-height: 400px;
+      overflow-y: auto;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .result-box .error { color: var(--red); }
+    .result-box .loading { color: var(--text-muted); }
+
+    /* ── Stats cards ─────────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 56px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+      text-align: center;
+      backdrop-filter: blur(8px);
+      transition: all 0.2s;
+    }
+
+    .stat-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+
+    .stat-card .icon { font-size: 28px; margin-bottom: 10px; }
+
+    .stat-card .label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 500;
+    }
+
+    .stat-card .value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-top: 2px;
+      color: var(--text-primary);
+    }
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    footer {
+      padding: 40px 0;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      margin-top: 20px;
+    }
+
+    footer p {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    footer a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    footer a:hover { color: var(--accent); }
+
+    /* ── Animations ──────────────────────────────────────────── */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeIn 0.6s ease forwards;
+    }
+
+    .fade-in:nth-child(2) { animation-delay: 0.1s; }
+    .fade-in:nth-child(3) { animation-delay: 0.15s; }
+    .fade-in:nth-child(4) { animation-delay: 0.2s; }
+    .fade-in:nth-child(5) { animation-delay: 0.25s; }
+
+    @keyframes fadeIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Scrollbar ───────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+  <!-- Background -->
+  <div class="bg-gradient">
+    <div class="orb"></div>
+    <div class="orb"></div>
+    <div class="orb"></div>
+  </div>
+
+  <div class="container">
+
+    <!-- Header -->
+    <header class="fade-in">
+      <div class="logo-badge">
+        <span class="dot"></span>
+        API v1.0.0 — Live
+      </div>
+      <h1>GitHub Profile Analyzer</h1>
+      <p class="subtitle">
+        Fetch, analyze, and store GitHub user profiles. Get engagement scores, language breakdowns, repo stats & historical tracking.
+      </p>
+      <div class="hero-actions">
+        <a href="#try" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Try it live
+        </a>
+        <a href="https://github.com/hiya7790/GitHub-analyser" target="_blank" class="btn btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          Source code
+        </a>
+      </div>
+    </header>
+
+    <!-- Base URL -->
+    <div class="base-url fade-in">
+      <code id="baseUrl">https://github-analyser-api.onrender.com</code>
+      <button class="copy-btn" onclick="copyUrl(this)" aria-label="Copy base URL">Copy URL</button>
+    </div>
+
+    <!-- Endpoints -->
+    <div class="fade-in">
+      <div class="section-title">API Endpoints</div>
+      <div class="endpoints">
+        <div class="endpoint" onclick="copyPath('/api/analyze/:username')">
+          <span class="method post">POST</span>
+          <span class="path">/api/analyze/:username</span>
+          <span class="desc">Analyze a profile</span>
+        </div>
+        <div class="endpoint" onclick="copyPath('/api/profiles')">
+          <span class="method get">GET</span>
+          <span class="path">/api/profiles</span>
+          <span class="desc">List all profiles</span>
+        </div>
+        <div class="endpoint" onclick="copyPath('/api/profiles/:username')">
+          <span class="method get">GET</span>
+          <span class="path">/api/profiles/:username</span>
+          <span class="desc">Get single profile</span>
+        </div>
+        <div class="endpoint" onclick="copyPath('/api/profiles/:username/refresh')">
+          <span class="method put">PUT</span>
+          <span class="path">/api/profiles/:username/refresh</span>
+          <span class="desc">Refresh data</span>
+        </div>
+        <div class="endpoint" onclick="copyPath('/api/profiles/:username')">
+          <span class="method delete">DELETE</span>
+          <span class="path">/api/profiles/:username</span>
+          <span class="desc">Remove profile</span>
+        </div>
+        <div class="endpoint" onclick="copyPath('/api/profiles/:username/repos')">
+          <span class="method get">GET</span>
+          <span class="path">/api/profiles/:username/repos</span>
+          <span class="desc">User repos</span>
+        </div>
+        <div class="endpoint" onclick="copyPath('/api/profiles/:username/history')">
+          <span class="method get">GET</span>
+          <span class="path">/api/profiles/:username/history</span>
+          <span class="desc">History</span>
+        </div>
+        <div class="endpoint" onclick="copyPath('/api/profiles/compare?users=a,b,c')">
+          <span class="method get">GET</span>
+          <span class="path">/api/profiles/compare?users=a,b,c</span>
+          <span class="desc">Compare</span>
+        </div>
+        <div class="endpoint" onclick="copyPath('/api/stats')">
+          <span class="method get">GET</span>
+          <span class="path">/api/stats</span>
+          <span class="desc">Stats dashboard</span>
+        </div>
+        <div class="endpoint" onclick="copyPath('/api/github/rate-limit')">
+          <span class="method get">GET</span>
+          <span class="path">/api/github/rate-limit</span>
+          <span class="desc">Rate limit</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Try it -->
+    <div class="fade-in" id="try">
+      <div class="section-title">Try It</div>
+      <div class="try-it">
+        <h2>🔍 Analyze a GitHub profile</h2>
+        <p>Enter a GitHub username to fetch their profile, repo stats, language breakdown, and engagement score.</p>
+        <div class="try-form">
+          <input type="text" id="usernameInput" placeholder="e.g. torvalds" autocomplete="off" spellcheck="false">
+          <button class="btn btn-primary" id="analyzeBtn" onclick="analyzeProfile()">Analyze</button>
+        </div>
+        <div class="result-box" id="resultBox">
+          <pre id="resultContent"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Features -->
+    <div class="fade-in">
+      <div class="section-title">Features</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="icon">📊</div>
+          <div class="value">Engagement</div>
+          <div class="label">Score calculation</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon">🔤</div>
+          <div class="value">Languages</div>
+          <div class="label">Usage breakdown</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon">📈</div>
+          <div class="value">History</div>
+          <div class="label">Track over time</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon">⚡</div>
+          <div class="value">Compare</div>
+          <div class="label">Side-by-side</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="fade-in">
+      <p>
+        Built by <a href="https://github.com/hiya7790" target="_blank">hiya7790</a> ·
+        <a href="/health">Health</a> ·
+        <a href="https://github.com/hiya7790/GitHub-analyser" target="_blank">GitHub</a>
+      </p>
+    </footer>
+
+  </div>
+
+  <script>
+    const BASE = window.location.origin;
+
+    function copyUrl(btn) {
+      navigator.clipboard.writeText(document.getElementById('baseUrl').textContent);
+      btn.textContent = '✓ Copied';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy URL'; btn.classList.remove('copied'); }, 2000);
+    }
+
+    function copyPath(path) {
+      navigator.clipboard.writeText(BASE + path);
+    }
+
+    async function analyzeProfile() {
+      const input = document.getElementById('usernameInput');
+      const box = document.getElementById('resultBox');
+      const content = document.getElementById('resultContent');
+      const btn = document.getElementById('analyzeBtn');
+      const username = input.value.trim();
+
+      if (!username) { input.focus(); return; }
+
+      box.classList.add('visible');
+      content.className = 'loading';
+      content.textContent = '⏳ Analyzing ' + username + '...';
+      btn.disabled = true;
+      btn.textContent = 'Analyzing...';
+
+      try {
+        const res = await fetch(BASE + '/api/analyze/' + encodeURIComponent(username), { method: 'POST' });
+        const data = await res.json();
+        content.className = res.ok ? '' : 'error';
+        content.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        content.className = 'error';
+        content.textContent = 'Error: ' + err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Analyze';
+      }
+    }
+
+    // Enter key support
+    document.getElementById('usernameInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') analyzeProfile();
+    });
+  </script>
+</body>
+</html>

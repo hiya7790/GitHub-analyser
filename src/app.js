@@ -1,4 +1,5 @@
 const express = require("express");
+const path    = require("path");
 const cors    = require("cors");
 const helmet  = require("helmet");
 const morgan  = require("morgan");
@@ -10,10 +11,24 @@ const { errorHandler, notFound } = require("./middleware/errorHandler");
 const app = express();
 
 // ── Security & parsing ───────────────────────────────────────────────────────
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc:  ["'self'", "'unsafe-inline'"],
+      styleSrc:   ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc:    ["'self'", "https://fonts.gstatic.com"],
+      connectSrc: ["'self'"],
+      imgSrc:     ["'self'", "data:"],
+    },
+  },
+}));
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// ── Static files (landing page) ──────────────────────────────────────────────
+app.use(express.static(path.join(__dirname, "..", "public")));
 
 // ── Logging ──────────────────────────────────────────────────────────────────
 if (process.env.NODE_ENV !== "test") {
@@ -46,12 +61,11 @@ app.get("/health", (_req, res) => {
 // ── API routes ───────────────────────────────────────────────────────────────
 app.use("/api", profileRoutes);
 
-// ── Root info ────────────────────────────────────────────────────────────────
-app.get("/", (_req, res) => {
+// ── API info (JSON) ──────────────────────────────────────────────────────────
+app.get("/api/info", (_req, res) => {
   res.json({
     service: "GitHub Profile Analyzer API",
     version: "1.0.0",
-    docs: "/api/docs",
     health: "/health",
     endpoints: {
       analyze:     "POST   /api/analyze/:username",
